@@ -1,0 +1,51 @@
+{
+  "name": "geekflare-api",
+  "version": "0.0.1",
+  "description": "Official Node.js SDK for Geekflare API",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "generate": "openapi-ts",
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/geekflare/geekflare-api-node.git"
+  },
+  "keywords": [
+    "geekflare",
+    "api",
+    "sdk",
+    "scraping",
+    "screenshot",
+    "dns"
+  ],
+  "author": "Geekflare",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/geekflare/geekflare-api-node/issues"
+  },
+  "homepage": "https://github.com/geekflare/geekflare-api-node#readme",
+  "devDependencies": {
+    "@hey-api/client-fetch": "^0.13.1",
+    "@hey-api/openapi-ts": "^0.97.0",
+    "@types/node": "^25.6.0",
+    "prettier": "^3.8.3",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.3"
+  },
+  "peerDependencies": {
+    "@hey-api/client-fetch": "latest"
+  }
+}
