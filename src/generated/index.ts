@@ -19,7 +19,7 @@ export {
   tlsScan,
   url2Pdf,
   webScrape,
-} from "./sdk.gen.js";
+} from "./sdk.gen";
 export type {
   BaseErrorResponseDto,
   BrokenLinkData,
@@ -186,4 +186,4 @@ export type {
   WebScrapeResponse,
   WebScrapeResponseDto,
   WebScrapeResponses,
-} from "./types.gen.js";
+} from "./types.gen";

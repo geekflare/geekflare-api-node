@@ -1,6 +1,6 @@
 {
   "name": "@geekflare/api-node",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Official Node.js / TypeScript SDK for Geekflare API",
   "type": "module",
   "main": "./dist/index.js",
@@ -38,7 +38,6 @@
   },
   "homepage": "https://github.com/geekflare/geekflare-api-node#readme",
   "devDependencies": {
-    "@hey-api/client-fetch": "^0.13.1",
     "@hey-api/openapi-ts": "^0.97.0",
     "@types/node": "^25.6.0",
     "prettier": "^3.8.3",
@@ -46,6 +45,5 @@
     "typescript": "^6.0.3"
   },
   "peerDependencies": {
-    "@hey-api/client-fetch": "latest"
   }
 }
