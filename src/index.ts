@@ -1,6 +1,6 @@
-import { client as defaultClient } from "./generated/client.gen";
-import { createClient, createConfig } from "./generated/client/index";
-import * as sdk from "./generated/sdk.gen";
+import { client as defaultClient } from "./generated/client.gen.js";
+import { createClient, createConfig } from "./generated/client/index.js";
+import * as sdk from "./generated/sdk.gen.js";
 import type {
   MetaScrapeDto,
   WebScrapeDto,
@@ -19,7 +19,7 @@ import type {
   PingDto,
   LighthouseDto,
   SearchRequestDto,
-} from "./generated/types.gen";
+} from "./generated/types.gen.js";
 
 export type GeekflareConfig = {
   apiKey: string;
@@ -167,4 +167,4 @@ export type {
   PingDto,
   LighthouseDto,
   SearchRequestDto,
-} from "./generated/types.gen";
+} from "./generated/types.gen.js";
