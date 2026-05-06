@@ -17,7 +17,7 @@ const client = new GeekflareClient({
   apiKey: "your-api-key",
 });
 
-const result = await client.ping({ url: "https://google.com" });
+const result = await client.webScrape({ url: "https://google.com" });
 console.log(result);
 ```
 
@@ -25,8 +25,9 @@ console.log(result);
 
 | Method                       | Description                    |
 | ---------------------------- | ------------------------------ |
-| `client.metaScrape(body)`    | Scrape meta tags from a URL    |
 | `client.webScrape(body)`     | Scrape web page content        |
+| `client.search(body)`        | Perform a web search           |
+| `client.metaScrape(body)`    | Scrape meta tags from a URL    |
 | `client.dnsRecord(body)`     | Look up DNS records            |
 | `client.screenshot(body)`    | Take a screenshot of a URL     |
 | `client.siteStatus(body)`    | Check if a site is up or down  |
@@ -41,7 +42,6 @@ console.log(result);
 | `client.mtr(body)`           | Perform MTR network test       |
 | `client.ping(body)`          | Ping a host                    |
 | `client.lighthouse(body)`    | Run Lighthouse audit           |
-| `client.search(body)`        | Perform a web search           |
 
 ## Configuration
 
@@ -56,7 +56,7 @@ const client = new GeekflareClient({
 
 ```typescript
 try {
-  const result = await client.ping({ url: "https://google.com" });
+  const result = await client.webScrape({ url: "https://google.com" });
   console.log(result);
 } catch (error) {
   console.error("API error:", error);
