@@ -17,7 +17,7 @@ const client = new GeekflareClient({
   apiKey: "your-api-key",
 });
 
-const result = await client.webScrape({ url: "https://google.com" });
+const result = await client.webScrape({ url: "https://toscrape.com/" });
 console.log(result);
 ```
 
@@ -56,7 +56,7 @@ const client = new GeekflareClient({
 
 ```typescript
 try {
-  const result = await client.webScrape({ url: "https://google.com" });
+  const result = await client.webScrape({ url: "https://toscrape.com/" });
   console.log(result);
 } catch (error) {
   console.error("API error:", error);
