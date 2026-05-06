@@ -1,6 +1,6 @@
 # @geekflare/api-node
 
-Official Node.js / TypeScript SDK for the [Geekflare API](https://dash.geekflare.com).
+Official Node.js / TypeScript SDK for the [Geekflare API](https://geekflare.com/api/).
 
 ## Installation
 

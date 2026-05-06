@@ -29,7 +29,8 @@
     "sdk",
     "scraping",
     "screenshot",
-    "dns"
+    "dns",
+    "search"
   ],
   "author": "Geekflare",
   "license": "MIT",
