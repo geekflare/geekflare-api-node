@@ -5,7 +5,7 @@ Official Node.js / TypeScript SDK for the [Geekflare API](https://geekflare.com/
 ## Installation
 
 ```bash
-npm install @geekflare/api-node @hey-api/client-fetch
+npm install @geekflare/api-node
 ```
 
 ## Quick Start
