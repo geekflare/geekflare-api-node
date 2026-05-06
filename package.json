@@ -1,6 +1,6 @@
 {
   "name": "@geekflare/api-node",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Official Node.js / TypeScript SDK for Geekflare API",
   "type": "module",
   "main": "./dist/index.js",
