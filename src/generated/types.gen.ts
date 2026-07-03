@@ -453,6 +453,18 @@ export type ScreenshotDto = {
    * Capture beyond viewport if possible
    */
   captureBeyondViewport?: boolean;
+  /**
+   * CSS selector to capture only a specific element on the page. Supports class (.), ID (#), and attribute selectors.
+   */
+  selector?: string;
+  /**
+   * If true and the selector is not found, falls back to a full-page screenshot instead of returning an error. Default: false.
+   */
+  fallbackToFullPage?: boolean;
+  /**
+   * If true, includes a Base64-encoded image and data URI in the response. Useful for AI agents and LLMs that cannot fetch URLs. Default: false.
+   */
+  inline?: boolean;
 };
 
 export type ScreenshotMetaDto = {
@@ -537,9 +549,32 @@ export type ScreenshotMetaDto = {
    */
   captureBeyondViewport?: boolean;
   /**
+   * CSS selector that was targeted, if provided
+   */
+  selector?: string;
+  /**
+   * Whether fallback to full-page was enabled
+   */
+  fallbackToFullPage?: boolean;
+  /**
+   * Whether inline base64 output was requested
+   */
+  inline?: boolean;
+  /**
    * Test details
    */
   test: TestMetaDto;
+};
+
+export type ScreenshotInlineDto = {
+  /**
+   * Raw Base64-encoded image string
+   */
+  base64: string;
+  /**
+   * Data URI — ready to embed in an <img> tag or pass directly to an LLM
+   */
+  dataUri: string;
 };
 
 export type ScreenshotResponseDto = {
@@ -560,9 +595,13 @@ export type ScreenshotResponseDto = {
    */
   meta: ScreenshotMetaDto;
   /**
-   * Screenshot URL or base64 string
+   * URL of the captured screenshot
    */
   data: string;
+  /**
+   * Inline Base64 image data. Present only when the request included `inline: true`.
+   */
+  inline?: ScreenshotInlineDto;
 };
 
 export type SiteStatusDto = {
@@ -759,6 +798,14 @@ export type BrokenLinkSummaryDto = {
    * Number of server errors (5xx status codes)
    */
   serverError: number;
+  /**
+   * Number of forbidden links (403 status codes)
+   */
+  forbidden: number;
+  /**
+   * Number of timed-out links
+   */
+  timedOut: number;
 };
 
 export type BrokenLinkResponseDto = {
@@ -1716,6 +1763,12 @@ export type SearchResultItemDto = {
   content?: {
     [key: string]: unknown;
   };
+  /**
+   * Thumbnail image URL (if available)
+   */
+  thumbnail?: {
+    [key: string]: unknown;
+  };
 };
 
 export type SearchResponseDto = {
@@ -1798,6 +1851,40 @@ export type SearchHtmlResponseDto = {
   };
 };
 
+export type GroundedSourceDto = {
+  title: string;
+  url: string;
+  position: number;
+};
+
+export type GroundedAnswerDataDto = {
+  /**
+   * AI-synthesized answer with inline citations
+   */
+  answer: string;
+  /**
+   * Sources cited in the answer
+   */
+  sources: Array<GroundedSourceDto>;
+};
+
+export type GroundedAnswerResponseDto = {
+  /**
+   * Timestamp of the request in milliseconds
+   */
+  timestamp: number;
+  /**
+   * API status message
+   */
+  apiStatus: "success" | "failure";
+  /**
+   * API status code
+   */
+  apiCode: number;
+  meta: SearchMetaDto;
+  data: GroundedAnswerDataDto;
+};
+
 export type SearchRequestDto = {
   /**
    * Search query
@@ -1843,6 +1930,10 @@ export type SearchRequestDto = {
    * Number of URLs to scrape (requires scrape: true)
    */
   scrapeLimit?: number;
+  /**
+   * Use AI to synthesize a grounded answer from search results.
+   */
+  groundedAnswer?: boolean;
 };
 
 export type HealthResponseDto = {
@@ -1911,11 +2002,15 @@ export type MetaScrapeData = {
 
 export type MetaScrapeErrors = {
   /**
-   * Bad request (invalid parameters)
+   * Invalid URL.
    */
   400: BaseErrorResponseDto;
   /**
-   * Internal server error
+   * No metadata found.
+   */
+  422: BaseErrorResponseDto;
+  /**
+   * Crawling failed.
    */
   500: BaseErrorResponseDto;
 };
@@ -1940,11 +2035,15 @@ export type WebScrapeData = {
 
 export type WebScrapeErrors = {
   /**
-   * Bad request (invalid parameters)
+   * Invalid URL.
    */
   400: BaseErrorResponseDto;
   /**
-   * Internal server error
+   * Unable to connect to the target website.
+   */
+  422: BaseErrorResponseDto;
+  /**
+   * Crawling failed.
    */
   500: BaseErrorResponseDto;
 };
@@ -1969,11 +2068,11 @@ export type DnsRecordData = {
 
 export type DnsRecordErrors = {
   /**
-   * Bad request (invalid parameters)
+   * Invalid URL.
    */
   400: BaseErrorResponseDto;
   /**
-   * Internal server error
+   * DNS lookup failed.
    */
   500: BaseErrorResponseDto;
 };
@@ -1998,11 +2097,15 @@ export type ScreenshotData = {
 
 export type ScreenshotErrors = {
   /**
-   * Bad request (e.g. invalid URL or parameters)
+   * Invalid URL.
    */
   400: BaseErrorResponseDto;
   /**
-   * Internal server error while capturing screenshot
+   * Unable to connect to the target website.
+   */
+  422: BaseErrorResponseDto;
+  /**
+   * Screenshot generation failed.
    */
   500: BaseErrorResponseDto;
 };
@@ -2027,11 +2130,15 @@ export type SiteStatusData = {
 
 export type SiteStatusErrors = {
   /**
-   * Bad request (invalid parameters)
+   * Invalid URL.
    */
   400: BaseErrorResponseDto;
   /**
-   * Internal server error
+   * Too many redirects.
+   */
+  429: BaseErrorResponseDto;
+  /**
+   * Site status check failed.
    */
   500: BaseErrorResponseDto;
 };
@@ -2056,11 +2163,15 @@ export type RedirectCheckData = {
 
 export type RedirectCheckErrors = {
   /**
-   * Bad request
+   * Invalid URL.
    */
   400: BaseErrorResponseDto;
   /**
-   * Internal server error
+   * Too many redirects.
+   */
+  429: BaseErrorResponseDto;
+  /**
+   * Redirect check failed.
    */
   500: BaseErrorResponseDto;
 };
@@ -2086,13 +2197,13 @@ export type BrokenLinkData = {
 
 export type BrokenLinkErrors = {
   /**
-   * Bad request (invalid parameters)
+   * Invalid URL.
    */
   400: BaseErrorResponseDto;
   /**
-   * Internal server error
+   * Unable to connect to the target website.
    */
-  500: BaseErrorResponseDto;
+  422: BaseErrorResponseDto;
 };
 
 export type BrokenLinkError = BrokenLinkErrors[keyof BrokenLinkErrors];
@@ -2115,11 +2226,15 @@ export type Url2PdfData = {
 
 export type Url2PdfErrors = {
   /**
-   * Bad request (e.g. invalid URL or parameters)
+   * Invalid URL.
    */
   400: BaseErrorResponseDto;
   /**
-   * Internal server error while capturing Url2Pdf
+   * Unable to connect to the target website.
+   */
+  422: BaseErrorResponseDto;
+  /**
+   * PDF conversion failed.
    */
   500: BaseErrorResponseDto;
 };
@@ -2144,11 +2259,15 @@ export type OpenPortsData = {
 
 export type OpenPortsErrors = {
   /**
-   * Bad request (invalid parameters)
+   * Invalid URL.
    */
   400: BaseErrorResponseDto;
   /**
-   * Internal server error
+   * Port scan timed out.
+   */
+  408: BaseErrorResponseDto;
+  /**
+   * Port scan failed.
    */
   500: BaseErrorResponseDto;
 };
@@ -2173,11 +2292,15 @@ export type TlsScanData = {
 
 export type TlsScanErrors = {
   /**
-   * Bad request (invalid parameters)
+   * Invalid URL.
    */
   400: BaseErrorResponseDto;
   /**
-   * Internal server error
+   * TLS handshake failed.
+   */
+  422: BaseErrorResponseDto;
+  /**
+   * TLS scan failed.
    */
   500: BaseErrorResponseDto;
 };
@@ -2202,11 +2325,15 @@ export type LoadTimeData = {
 
 export type LoadTimeErrors = {
   /**
-   * Bad request (invalid parameters)
+   * Invalid URL.
    */
   400: BaseErrorResponseDto;
   /**
-   * Internal server error
+   * Unable to connect to the target website.
+   */
+  422: BaseErrorResponseDto;
+  /**
+   * Failed to measure page load time.
    */
   500: BaseErrorResponseDto;
 };
@@ -2231,11 +2358,15 @@ export type MixedContentData = {
 
 export type MixedContentErrors = {
   /**
-   * Bad request (invalid parameters)
+   * Invalid URL.
    */
   400: BaseErrorResponseDto;
   /**
-   * Internal server error
+   * Unable to connect to the target website.
+   */
+  422: BaseErrorResponseDto;
+  /**
+   * Failed to check for mixed content.
    */
   500: BaseErrorResponseDto;
 };
@@ -2261,13 +2392,21 @@ export type DnsSecData = {
 
 export type DnsSecErrors = {
   /**
-   * Bad request (invalid parameters)
+   * Invalid URL.
    */
   400: BaseErrorResponseDto;
   /**
-   * Internal server error
+   * DNSSEC check failed.
    */
   500: BaseErrorResponseDto;
+  /**
+   * DNSSEC query failed.
+   */
+  502: BaseErrorResponseDto;
+  /**
+   * DNS server timed out.
+   */
+  504: BaseErrorResponseDto;
 };
 
 export type DnsSecError = DnsSecErrors[keyof DnsSecErrors];
@@ -2290,11 +2429,11 @@ export type MtrData = {
 
 export type MtrErrors = {
   /**
-   * Bad request (invalid parameters)
+   * Invalid URL.
    */
   400: BaseErrorResponseDto;
   /**
-   * Internal server error
+   * MTR is not installed.
    */
   500: BaseErrorResponseDto;
 };
@@ -2319,13 +2458,13 @@ export type PingData = {
 
 export type PingErrors = {
   /**
-   * Bad request (invalid parameters)
+   * Invalid URL.
    */
   400: BaseErrorResponseDto;
   /**
-   * Internal server error
+   * Host is unreachable.
    */
-  500: BaseErrorResponseDto;
+  504: BaseErrorResponseDto;
 };
 
 export type PingError = PingErrors[keyof PingErrors];
@@ -2348,11 +2487,15 @@ export type LighthouseData = {
 
 export type LighthouseErrors = {
   /**
-   * Bad request (e.g. invalid URL or parameters)
+   * Invalid URL.
    */
   400: BaseErrorResponseDto;
   /**
-   * Internal server error while running Lighthouse audit
+   * Unable to connect to the target website.
+   */
+  422: BaseErrorResponseDto;
+  /**
+   * Lighthouse audit failed.
    */
   500: BaseErrorResponseDto;
 };
@@ -2377,11 +2520,15 @@ export type SearchData = {
 
 export type SearchErrors = {
   /**
-   * Bad request
+   * Invalid URL.
    */
   400: BaseErrorResponseDto;
   /**
-   * Internal server error
+   * Unable to connect to the target website.
+   */
+  422: BaseErrorResponseDto;
+  /**
+   * Search failed.
    */
   500: BaseErrorResponseDto;
 };
@@ -2396,7 +2543,8 @@ export type SearchResponses = {
     | SearchResponseDto
     | ImageSearchResponseDto
     | SearchMarkdownResponseDto
-    | SearchHtmlResponseDto;
+    | SearchHtmlResponseDto
+    | GroundedAnswerResponseDto;
 };
 
 export type SearchResponse = SearchResponses[keyof SearchResponses];

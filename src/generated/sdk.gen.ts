@@ -389,7 +389,7 @@ export const lighthouse = <ThrowOnError extends boolean = false>(
 /**
  * Search API for AI Agents & LLMs
  *
- * Search the web for AI, remove noise like ads and unnecessary HTML, and return clean data in JSON, Markdown, or HTML formats, with support for image search and news.
+ * Structured search results from the web or news. Strips out ads and HTML noise to provide pure data in JSON, Markdown, or HTML. Fully supports AI-grounded answers, search-with-scrape, image search, and targeted Web or News sourcing.
  */
 export const search = <ThrowOnError extends boolean = false>(
   options: Options<SearchData, ThrowOnError>,
