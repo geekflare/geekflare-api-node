@@ -80,6 +80,8 @@ export type Options<
 
 /**
  * Scrape a webpage meta with custom options
+ *
+ * Extract a page's meta tags, Open Graph, and Twitter Card data like title, description, canonical URL, images, and more without scraping the full page body.
  */
 export const metaScrape = <ThrowOnError extends boolean = false>(
   options: Options<MetaScrapeData, ThrowOnError>,
@@ -100,6 +102,8 @@ export const metaScrape = <ThrowOnError extends boolean = false>(
 
 /**
  * Scrape a webpage with custom options
+ *
+ * Fetch a page and return content as Markdown, HTML, JSON, or plain text. Automatically detects whether JavaScript rendering is needed, with optional stealth mode, `proxyMode`-controlled proxy routing, CSS/XPath field extraction, and ready-made `product`/`contact` extraction templates.
  */
 export const webScrape = <ThrowOnError extends boolean = false>(
   options: Options<WebScrapeData, ThrowOnError>,
@@ -120,6 +124,8 @@ export const webScrape = <ThrowOnError extends boolean = false>(
 
 /**
  * Retrieve DNS records for a given domain
+ *
+ * Look up A, AAAA, CNAME, MX, CAA, NS, SOA, SRV, and TXT records for any domain. Query every supported type in one call, or pass `types` to fetch only the ones you need.
  */
 export const dnsRecord = <ThrowOnError extends boolean = false>(
   options: Options<DnsRecordData, ThrowOnError>,
@@ -140,6 +146,8 @@ export const dnsRecord = <ThrowOnError extends boolean = false>(
 
 /**
  * Capture a full-page screenshot of a website
+ *
+ * Capture a pixel-perfect screenshot of any URL as PNG, JPEG, or WebP. Supports full-page capture, device emulation, custom viewports, and CAPTCHA/cookie-banner bypass.
  */
 export const screenshot = <ThrowOnError extends boolean = false>(
   options: Options<ScreenshotData, ThrowOnError>,
@@ -160,6 +168,8 @@ export const screenshot = <ThrowOnError extends boolean = false>(
 
 /**
  * Check if a site is up or down
+ *
+ * Check whether a website is reachable and returns a successful HTTP response. Ideal for uptime monitoring and pre-flight checks before running other tests.
  */
 export const siteStatus = <ThrowOnError extends boolean = false>(
   options: Options<SiteStatusData, ThrowOnError>,
@@ -180,6 +190,8 @@ export const siteStatus = <ThrowOnError extends boolean = false>(
 
 /**
  * Check the redirection chain of a given URL
+ *
+ * Trace the full redirect chain of a URL, including every intermediate hop, status code, and the final destination. Useful for auditing SEO redirects and link rot.
  */
 export const redirectCheck = <ThrowOnError extends boolean = false>(
   options: Options<RedirectCheckData, ThrowOnError>,
@@ -200,6 +212,8 @@ export const redirectCheck = <ThrowOnError extends boolean = false>(
 
 /**
  * Check if a webpage contains broken links
+ *
+ * Scan a webpage for broken links and report which URLs return errors, so you can fix dead links before they hurt SEO or user experience.
  */
 export const brokenLink = <ThrowOnError extends boolean = false>(
   options: Options<BrokenLinkData, ThrowOnError>,
@@ -220,6 +234,8 @@ export const brokenLink = <ThrowOnError extends boolean = false>(
 
 /**
  * Capture a full-page Url2Pdf of a website
+ *
+ * Convert any URL into a downloadable PDF document, with control over page orientation, margins, and scale. Useful for archiving pages or generating reports.
  */
 export const url2Pdf = <ThrowOnError extends boolean = false>(
   options: Options<Url2PdfData, ThrowOnError>,
@@ -240,6 +256,8 @@ export const url2Pdf = <ThrowOnError extends boolean = false>(
 
 /**
  * Scan a website for open ports
+ *
+ * Scan a domain or IP for open TCP ports, either across the top N most common ports or a custom range you specify. Useful for surface-level network security audits and exposure checks.
  */
 export const openPorts = <ThrowOnError extends boolean = false>(
   options: Options<OpenPortsData, ThrowOnError>,
@@ -260,6 +278,8 @@ export const openPorts = <ThrowOnError extends boolean = false>(
 
 /**
  * Perform TLS scan for a given domain
+ *
+ * Inspect a domain's TLS/SSL configuration, including which protocol versions are supported (from the deprecated and insecure SSLv2/SSLv3 through TLS 1.3) and certificate details, to catch expiring certificates and outdated, insecure configurations.
  */
 export const tlsScan = <ThrowOnError extends boolean = false>(
   options: Options<TlsScanData, ThrowOnError>,
@@ -280,6 +300,8 @@ export const tlsScan = <ThrowOnError extends boolean = false>(
 
 /**
  * Measure the page load time for a given URL
+ *
+ * Measure how long a webpage takes to fully load from a real browser. Pass `targetCountries` (up to 3 ISO country codes) to also test reachability from those locations via proxy alongside the default US server test, and compare results side by side.
  */
 export const loadTime = <ThrowOnError extends boolean = false>(
   options: Options<LoadTimeData, ThrowOnError>,
@@ -300,6 +322,8 @@ export const loadTime = <ThrowOnError extends boolean = false>(
 
 /**
  * Check for mixed content on a site
+ *
+ * Scan an HTTPS page for insecure HTTP resources like images, scripts, or stylesheets that trigger browser security warnings and break the padlock icon.
  */
 export const mixedContent = <ThrowOnError extends boolean = false>(
   options: Options<MixedContentData, ThrowOnError>,
@@ -320,6 +344,8 @@ export const mixedContent = <ThrowOnError extends boolean = false>(
 
 /**
  * Check if DNSSEC is enabled for a domain
+ *
+ * Check whether DNSSEC is properly configured and validating for a domain, helping you confirm protection against DNS spoofing and cache poisoning attacks.
  */
 export const dnsSec = <ThrowOnError extends boolean = false>(
   options: Options<DnsSecData, ThrowOnError>,
@@ -336,6 +362,8 @@ export const dnsSec = <ThrowOnError extends boolean = false>(
 
 /**
  * Perform MTR (My Traceroute) network diagnostic test
+ *
+ * Run a My Traceroute (MTR) diagnostic between Geekflare and a target host, combining traceroute and ping to show packet loss and latency at each network hop.
  */
 export const mtr = <ThrowOnError extends boolean = false>(
   options: Options<MtrData, ThrowOnError>,
@@ -352,6 +380,8 @@ export const mtr = <ThrowOnError extends boolean = false>(
 
 /**
  * Perform ICMP Ping test on a given URL or IP
+ *
+ * Send ICMP ping requests to a URL or IP and return latency, packet loss, and round-trip time statistics — useful for quick reachability and network health checks.
  */
 export const ping = <ThrowOnError extends boolean = false>(
   options: Options<PingData, ThrowOnError>,
@@ -368,6 +398,8 @@ export const ping = <ThrowOnError extends boolean = false>(
 
 /**
  * Run Lighthouse audit on a website
+ *
+ * Run a Google Lighthouse audit for performance, SEO, accessibility, and best practices, with support for advanced flags via the `parameters` array.
  */
 export const lighthouse = <ThrowOnError extends boolean = false>(
   options: Options<LighthouseData, ThrowOnError>,

@@ -127,6 +127,92 @@ export type BaseErrorResponseDto = {
   details?: string;
 };
 
+export type PromptAiPromptDto = {
+  /**
+   * AI extraction mode
+   */
+  type: "prompt" | "schema" | "listing" | "summary" | "sentiment" | "keywords";
+  /**
+   * Open-ended question about the page
+   */
+  query: string;
+};
+
+export type SchemaAiPromptDto = {
+  /**
+   * AI extraction mode
+   */
+  type: "prompt" | "schema" | "listing" | "summary" | "sentiment" | "keywords";
+  /**
+   * JSON Schema-like object describing fields to extract
+   */
+  schema: {
+    [key: string]: unknown;
+  };
+};
+
+export type ListingAiPromptDto = {
+  /**
+   * AI extraction mode
+   */
+  type: "prompt" | "schema" | "listing" | "summary" | "sentiment" | "keywords";
+  /**
+   * JSON Schema-like object describing each item to extract from a listing/category page
+   */
+  itemSchema: {
+    [key: string]: unknown;
+  };
+  /**
+   * Maximum number of items to extract
+   */
+  maxItems?: number;
+};
+
+export type SummaryAiPromptDto = {
+  /**
+   * AI extraction mode
+   */
+  type: "prompt" | "schema" | "listing" | "summary" | "sentiment" | "keywords";
+  /**
+   * Summary style
+   */
+  style?: "paragraph" | "bullets" | "tldr";
+  /**
+   * Only summarize the parts of the content relevant to this focus area
+   */
+  focus?: string;
+  /**
+   * Sentence count (paragraph/tldr) or bullet count (bullets)
+   */
+  maxLength?: number;
+};
+
+export type SentimentAiPromptDto = {
+  /**
+   * AI extraction mode
+   */
+  type: "prompt" | "schema" | "listing" | "summary" | "sentiment" | "keywords";
+  /**
+   * Aspects to score individually (aspect-based sentiment). If omitted, only overall sentiment is returned.
+   */
+  aspects?: Array<string>;
+};
+
+export type KeywordsAiPromptDto = {
+  /**
+   * AI extraction mode
+   */
+  type: "prompt" | "schema" | "listing" | "summary" | "sentiment" | "keywords";
+  /**
+   * Maximum number of keywords to return
+   */
+  maxKeywords?: number;
+  /**
+   * Also extract named entities (organizations, people, dates, laws, locations)
+   */
+  includeEntities?: boolean;
+};
+
 export type DefaultExtractionFieldDto = {
   /**
    * Title/key of the extracted field
@@ -192,11 +278,15 @@ export type WebScrapeDto = {
    */
   blockAds?: boolean;
   /**
-   * Whether to render JavaScript
+   * Whether to render JavaScript. If omitted, rendering is automatic: the page is fetched without a browser first, and JavaScript is only rendered if the page needs it. Set explicitly to true or false to force rendering on or off.
    */
   renderJS?: boolean;
   /**
-   * Proxy country code to route the request
+   * Whether to route the request through a proxy. `false` never uses a proxy (default), `auto` tries without a proxy first and retries through one if the site blocks the request, `true` always uses a proxy.
+   */
+  proxyMode?: boolean | "auto";
+  /**
+   * Proxy country code to route the request. Used when a proxy is active (proxyMode is auto or true).
    */
   proxyCountry?: string;
   /**
@@ -224,13 +314,27 @@ export type WebScrapeDto = {
    */
   waitTime?: number;
   /**
-   * Extraction mode (only used if format=json)
+   * Extraction mode (only used if format=json). Set to `template` to use a ready-made extraction template instead of a custom schema — see the `template` field.
    */
-  extractionMode?: "default" | "cssSchema" | "xpathSchema";
+  extractionMode?: "default" | "cssSchema" | "xpathSchema" | "template";
+  /**
+   * Extraction template to use when extractionMode is `template`. `product` extracts product info (title, brand, pricing, availability, images, ratings). `contact` extracts contact info (company, locations, emails, phones, social profiles). Ignored for other extraction modes.
+   */
+  template?: "product" | "contact";
   /**
    * Extraction schema (optional in default mode, required in css/xpath)
    */
   extractionSchema?: ExtractionSchemaDto;
+  /**
+   * Ask AI to extract or analyze the scraped page. Always runs against the Markdown of the page regardless of the format field. Adds +6 credits on top of the base scraping cost.
+   */
+  aiPrompt?:
+    | PromptAiPromptDto
+    | SchemaAiPromptDto
+    | ListingAiPromptDto
+    | SummaryAiPromptDto
+    | SentimentAiPromptDto
+    | KeywordsAiPromptDto;
 };
 
 export type WebScrapeMetaDto = {
@@ -263,7 +367,7 @@ export type WebScrapeMetaDto = {
    */
   blockAds: boolean;
   /**
-   * Whether JavaScript was rendered
+   * Whether JavaScript was rendered for this request (resolved automatically unless explicitly set)
    */
   renderJS: boolean;
   /**
@@ -275,6 +379,14 @@ export type WebScrapeMetaDto = {
    */
   waitTime: number;
   /**
+   * Proxy mode requested for this request, echoed as a string ("false", "auto", or "true")
+   */
+  proxyMode: string;
+  /**
+   * Whether a proxy was actually used for this request. Always matches proxyMode when it's `false` or `true`; depends on the outcome of the auto-retry when proxyMode is `auto`.
+   */
+  proxyUsed: boolean;
+  /**
    * Proxy country used, if any
    */
   proxyCountry?: string;
@@ -283,6 +395,10 @@ export type WebScrapeMetaDto = {
    */
   extractionMode: string;
   /**
+   * Extraction template used, if extractionMode was `template`
+   */
+  template?: "product" | "contact";
+  /**
    * Extraction schema (optional in default mode, required in css/xpath)
    */
   extractionSchema: ExtractionSchemaDto;
@@ -290,6 +406,10 @@ export type WebScrapeMetaDto = {
    * Test details object
    */
   test: TestMetaDto;
+  /**
+   * The aiPrompt.type used for this request, if any
+   */
+  aiPromptType?: string;
 };
 
 export type WebScrapeResponseDto = {
@@ -317,6 +437,12 @@ export type WebScrapeResponseDto = {
     | {
         [key: string]: unknown;
       };
+  /**
+   * AI extraction/analysis result. Shape depends on aiPrompt.type. Omitted when aiPrompt was not provided.
+   */
+  aiResult?: {
+    [key: string]: unknown;
+  };
 };
 
 export type DnsRecordDto = {
@@ -961,7 +1087,7 @@ export type Url2PdfResponseDto = {
 
 export type OpenPortDto = {
   /**
-   * The URL to be checked
+   * The URL, hostname, IPv4, or IPv6 address to be checked
    */
   url: string;
   /**
@@ -1036,6 +1162,14 @@ export type TlsScanMetaDto = {
 
 export type TlsProtocolsDto = {
   /**
+   * Whether the deprecated and insecure SSL 2.0 is supported
+   */
+  ssl2: boolean;
+  /**
+   * Whether the deprecated and insecure SSL 3.0 is supported
+   */
+  ssl3: boolean;
+  /**
    * Whether TLS 1.0 is supported
    */
   tls10: boolean;
@@ -1068,6 +1202,57 @@ export type TlsCertificateIssuerDto = {
   commonName: string;
 };
 
+export type TlsCertificateChainEntryDto = {
+  /**
+   * Common name of this certificate in the chain
+   */
+  commonName: string;
+  /**
+   * Common name of this certificate's issuer
+   */
+  issuerCommonName: string;
+  /**
+   * SHA-1 fingerprint of this certificate
+   */
+  fingerprint: string;
+};
+
+export type TlsCertificateChainDto = {
+  /**
+   * Number of certificates in the chain as presented by the server
+   */
+  length: number;
+  /**
+   * Whether the chain terminates in a self-signed root (i.e. is not missing an intermediate)
+   */
+  complete: boolean;
+  /**
+   * Ordered list of certificates from leaf to root
+   */
+  certificates: Array<TlsCertificateChainEntryDto>;
+};
+
+export type TlsForwardSecrecyDto = {
+  /**
+   * Cipher suite negotiated on the primary handshake
+   */
+  negotiatedCipher: {
+    [key: string]: unknown;
+  };
+  /**
+   * Ephemeral key exchange type (e.g. ECDH, DH), null if the cipher does not provide forward secrecy
+   */
+  ephemeralKeyType: {
+    [key: string]: unknown;
+  };
+  /**
+   * Ephemeral key size in bits
+   */
+  ephemeralKeySize: {
+    [key: string]: unknown;
+  };
+};
+
 export type TlsCertificateDto = {
   /**
    * Common name (CN) on the certificate
@@ -1085,6 +1270,140 @@ export type TlsCertificateDto = {
    * Certificate expiry date
    */
   expiry: string;
+  /**
+   * Certificate valid-from date
+   */
+  validFrom: string;
+  /**
+   * Whether the certificate has expired
+   */
+  isExpired: boolean;
+  /**
+   * Whether the certificate is not yet valid
+   */
+  isNotYetValid: boolean;
+  /**
+   * Whether the requested hostname matches the certificate (CN/SAN)
+   */
+  hostnameMatches: boolean;
+  /**
+   * Whether the leaf certificate is self-signed
+   */
+  selfSigned: boolean;
+  /**
+   * Public key size in bits, null if not an RSA key
+   */
+  keyBits: {
+    [key: string]: unknown;
+  };
+  /**
+   * Whether the key size is considered weak (RSA < 2048 bits), null if not applicable
+   */
+  weakKey: {
+    [key: string]: unknown;
+  };
+  /**
+   * Whether the certificate uses a weak signature algorithm (SHA-1/MD5); heuristic OID scan, null if undeterminable
+   */
+  weakSignatureAlgorithm: {
+    [key: string]: unknown;
+  };
+  /**
+   * Certificate chain analysis
+   */
+  chain: TlsCertificateChainDto;
+  /**
+   * Forward secrecy signal from the negotiated handshake
+   */
+  forwardSecrecy: TlsForwardSecrecyDto;
+  /**
+   * Whether the chain validates against Node/OpenSSL's built-in trust store
+   */
+  trusted: boolean;
+  /**
+   * Node TLS authorization error code/message if not trusted, null otherwise
+   */
+  authorizationError: {
+    [key: string]: unknown;
+  };
+};
+
+export type TlsVulnerabilitiesDto = {
+  /**
+   * POODLE (SSLv3 padding oracle) exposure and TLS_FALLBACK_SCSV support
+   */
+  poodle: {
+    [key: string]: unknown;
+  };
+  /**
+   * DROWN exposure, simplified to SSLv2 support (full check requires cross-server key reuse analysis)
+   */
+  drown: {
+    [key: string]: unknown;
+  };
+  /**
+   * FREAK — whether the server accepts EXPORT-grade RSA cipher suites
+   */
+  freak: {
+    [key: string]: unknown;
+  };
+  /**
+   * LOGJAM — whether the server negotiates a DHE group under 1024 bits
+   */
+  logjam: {
+    [key: string]: unknown;
+  };
+  /**
+   * SWEET32 — whether the server negotiates 3DES/64-bit block ciphers
+   */
+  sweet32: {
+    [key: string]: unknown;
+  };
+  /**
+   * Whether the server accepts RC4 cipher suites
+   */
+  rc4: {
+    [key: string]: unknown;
+  };
+  /**
+   * Whether the server accepts NULL-encryption cipher suites
+   */
+  nullCipher: {
+    [key: string]: unknown;
+  };
+  /**
+   * Whether the server accepts anonymous (unauthenticated) cipher suites
+   */
+  anonymousCipher: {
+    [key: string]: unknown;
+  };
+  /**
+   * CRIME — whether the server accepts TLS-level (DEFLATE) compression
+   */
+  crime: {
+    [key: string]: unknown;
+  };
+};
+
+export type TlsAdvisoryDto = {
+  /**
+   * BREACH is an HTTP-layer attack, not a TLS property — this is advisory only, not a vulnerability verdict
+   */
+  breach: {
+    [key: string]: unknown;
+  };
+  /**
+   * Secure renegotiation (RFC 5746) support signal — absence does not necessarily mean vulnerable
+   */
+  secureRenegotiation: {
+    [key: string]: unknown;
+  };
+  /**
+   * Whether the server stapled an OCSP response during the handshake
+   */
+  ocspStapling: {
+    [key: string]: unknown;
+  };
 };
 
 export type TlsScanDataDto = {
@@ -1096,6 +1415,14 @@ export type TlsScanDataDto = {
    * Certificate details
    */
   certificate: TlsCertificateDto;
+  /**
+   * Category A vulnerability findings (definitive pass/fail)
+   */
+  vulnerabilities: TlsVulnerabilitiesDto;
+  /**
+   * Category B advisory signals (informational, not a verdict)
+   */
+  advisory: TlsAdvisoryDto;
 };
 
 export type TlsScanResponseDto = {
@@ -1134,6 +1461,10 @@ export type LoadTimeDto = {
    * Proxy country code to route the request
    */
   proxyCountry?: string;
+  /**
+   * Test the URL from up to 3 additional locations via proxy, alongside the default US server test. Each entry is an ISO alpha-2 country code. When set, the response includes a per-location reachability breakdown instead of a single result.
+   */
+  targetCountries?: Array<string>;
 };
 
 export type LoadTimeMetaDto = {
@@ -1314,6 +1645,85 @@ export type LoadTimeResponseDto = {
    * Comprehensive site load time metrics
    */
   data: LoadTimeDataDto;
+};
+
+export type LoadTimeMultiLocationMetaDto = {
+  /**
+   * The tested URL
+   */
+  url: string;
+  /**
+   * Metadata about the test execution
+   */
+  test: TestMetaDto;
+  /**
+   * The full list of locations tested: the default US server plus every requested targetCountries entry
+   */
+  targetCountries: Array<string>;
+  /**
+   * Indicates if redirects were followed during the test
+   */
+  followRedirect?: boolean;
+};
+
+export type LoadTimeLocationResultDto = {
+  /**
+   * ISO alpha-2 country code for this test location
+   */
+  location: string;
+  /**
+   * Full country name for this test location
+   */
+  countryName: string;
+  /**
+   * Whether the site was reachable from this location
+   */
+  status: "reachable" | "unreachable";
+  /**
+   * Load time metrics for this location, same structure as the single-location `data` object
+   */
+  data: {
+    [key: string]: unknown;
+  };
+};
+
+/**
+ * Returned instead of LoadTimeResponseDto when `targetCountries` is set on the request
+ */
+export type LoadTimeMultiLocationResponseDto = {
+  /**
+   * Timestamp of the request in milliseconds
+   */
+  timestamp: number;
+  /**
+   * API status message
+   */
+  apiStatus: "success" | "failure";
+  /**
+   * API status code
+   */
+  apiCode: number;
+  /**
+   * Overall summary of reachability across all tested locations
+   */
+  message: string;
+  /**
+   * Metadata about the multi-location test
+   */
+  meta: LoadTimeMultiLocationMetaDto;
+  /**
+   * Locations grouped by reachability outcome
+   */
+  summary: {
+    /**
+     * Locations from which the site was reachable
+     */
+    reachable?: Array<string>;
+  };
+  /**
+   * Per-location test results, including the default US server test
+   */
+  locations: Array<LoadTimeLocationResultDto>;
 };
 
 export type MixedContentDto = {
@@ -1554,7 +1964,7 @@ export type MtrResponseDto = {
 
 export type PingDto = {
   /**
-   * Target URL
+   * Target URL, hostname, IPv4, or IPv6 address
    */
   url: string;
 };
@@ -2342,9 +2752,9 @@ export type LoadTimeError = LoadTimeErrors[keyof LoadTimeErrors];
 
 export type LoadTimeResponses = {
   /**
-   * Load time retrieved successfully
+   * Load time retrieved successfully. Returns a single-location result by default, or a per-location breakdown when `targetCountries` is set.
    */
-  200: LoadTimeResponseDto;
+  200: LoadTimeResponseDto | LoadTimeMultiLocationResponseDto;
 };
 
 export type LoadTimeResponse = LoadTimeResponses[keyof LoadTimeResponses];
