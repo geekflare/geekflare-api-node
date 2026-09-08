@@ -290,7 +290,7 @@ export type WebScrapeDto = {
    */
   proxyCountry?: string;
   /**
-   * Format(s) of the scraped result. Comma-separated or array. Defaults to html.
+   * Format(s) of the scraped result. Comma-separated or array. Defaults to html-llm. markdown is recommended for most use cases.
    */
   format?: Array<
     | "html"
@@ -318,9 +318,9 @@ export type WebScrapeDto = {
    */
   extractionMode?: "default" | "cssSchema" | "xpathSchema" | "template";
   /**
-   * Extraction template to use when extractionMode is `template`. `product` extracts product info (title, brand, pricing, availability, images, ratings). `contact` extracts contact info (company, locations, emails, phones, social profiles). Ignored for other extraction modes.
+   * Extraction template to use when extractionMode is `template` (ignored otherwise, and has no effect unless extractionMode is set to `template`). Accepts `product` (extracts product info: title, brand, pricing, availability, images, ratings) or `contact` (extracts contact info: company, locations, emails, phones, social profiles).
    */
-  template?: "product" | "contact";
+  template?: string;
   /**
    * Extraction schema (optional in default mode, required in css/xpath)
    */
@@ -329,12 +329,24 @@ export type WebScrapeDto = {
    * Ask AI to extract or analyze the scraped page. Always runs against the Markdown of the page regardless of the format field. Adds +6 credits on top of the base scraping cost.
    */
   aiPrompt?:
-    | PromptAiPromptDto
-    | SchemaAiPromptDto
-    | ListingAiPromptDto
-    | SummaryAiPromptDto
-    | SentimentAiPromptDto
-    | KeywordsAiPromptDto;
+    | ({
+        type: "prompt";
+      } & PromptAiPromptDto)
+    | ({
+        type: "schema";
+      } & SchemaAiPromptDto)
+    | ({
+        type: "listing";
+      } & ListingAiPromptDto)
+    | ({
+        type: "summary";
+      } & SummaryAiPromptDto)
+    | ({
+        type: "sentiment";
+      } & SentimentAiPromptDto)
+    | ({
+        type: "keywords";
+      } & KeywordsAiPromptDto);
 };
 
 export type WebScrapeMetaDto = {
@@ -375,10 +387,6 @@ export type WebScrapeMetaDto = {
    */
   stealth: boolean;
   /**
-   * Seconds to wait after page load before capturing content. Helps bypass lazy-loaded content and bot checks.
-   */
-  waitTime: number;
-  /**
    * Proxy mode requested for this request, echoed as a string ("false", "auto", or "true")
    */
   proxyMode: string;
@@ -386,6 +394,10 @@ export type WebScrapeMetaDto = {
    * Whether a proxy was actually used for this request. Always matches proxyMode when it's `false` or `true`; depends on the outcome of the auto-retry when proxyMode is `auto`.
    */
   proxyUsed: boolean;
+  /**
+   * Seconds to wait after page load before capturing content. Helps bypass lazy-loaded content and bot checks.
+   */
+  waitTime: number;
   /**
    * Proxy country used, if any
    */
@@ -1098,6 +1110,10 @@ export type OpenPortDto = {
    * Custom port ranges to scan, e.g., "80,443,1000-1010"
    */
   portRanges?: string;
+  /**
+   * When true, also runs service/version detection (nmap -sV) on the ports found open. Slower than the base scan since it probes each open port individually — best-effort: if it fails, the port list is still returned without service info.
+   */
+  detectServices?: boolean;
 };
 
 export type OpenPortMetaDto = {
@@ -1114,9 +1130,61 @@ export type OpenPortMetaDto = {
    */
   portRanges?: string;
   /**
+   * Whether service/version detection was requested for this scan
+   */
+  detectServices?: boolean;
+  /**
    * Test details object
    */
   test: TestMetaDto;
+};
+
+export type DetectedServiceDto = {
+  /**
+   * Service name (e.g. "ssh", "http")
+   */
+  name?: {
+    [key: string]: unknown;
+  };
+  /**
+   * Product name (e.g. "OpenSSH")
+   */
+  product?: {
+    [key: string]: unknown;
+  };
+  /**
+   * Product version string
+   */
+  version?: {
+    [key: string]: unknown;
+  };
+  /**
+   * Additional context nmap reports alongside the match
+   */
+  extraInfo?: {
+    [key: string]: unknown;
+  };
+  /**
+   * Inferred OS family, if determinable
+   */
+  osType?: {
+    [key: string]: unknown;
+  };
+};
+
+export type PortServiceDetectionResultDto = {
+  /**
+   * Port number
+   */
+  port: number;
+  /**
+   * Port state as reported by nmap
+   */
+  state: string;
+  /**
+   * Detected service details
+   */
+  service: DetectedServiceDto;
 };
 
 export type OpenPortResponseDto = {
@@ -1140,6 +1208,14 @@ export type OpenPortResponseDto = {
    * List of open ports found
    */
   data: Array<number>;
+  /**
+   * Service/version detection results, present only when detectServices was requested and succeeded
+   */
+  services?: Array<PortServiceDetectionResultDto>;
+  /**
+   * Present only when detectServices was requested but could not complete (e.g. nmap error/timeout) — the port list in `data` is still accurate regardless
+   */
+  servicesError?: string;
 };
 
 export type TlsScanDto = {
@@ -2346,6 +2422,246 @@ export type SearchRequestDto = {
   groundedAnswer?: boolean;
 };
 
+export type BrandDto = {
+  /**
+   * Target URL
+   */
+  url: string;
+  /**
+   * Force on-demand fetch and refresh the cache, bypassing any existing cached data
+   */
+  refresh?: boolean;
+  /**
+   * Depth of brand data to return. Enriched includes LLM-synthesized company intelligence.
+   */
+  mode?: "standard" | "enriched";
+};
+
+export type BrandMetaDto = {
+  /**
+   * The domain that was queried
+   */
+  domain: string;
+  /**
+   * Mode requested
+   */
+  mode: "standard" | "enriched";
+  /**
+   * Whether this response was served from cache
+   */
+  cached: boolean;
+  /**
+   * When the underlying data was last fetched/updated
+   */
+  lastUpdated: string;
+  /**
+   * Human-readable age of the cached data
+   */
+  dataAge: string;
+  /**
+   * Whether a forced refresh was requested
+   */
+  refreshRequested: boolean;
+  /**
+   * Test details object
+   */
+  test: TestMetaDto;
+};
+
+export type BrandLogoDto = {
+  type: "logo" | "symbol" | "icon";
+  theme?: "light" | "dark";
+  url: string;
+  format: string;
+};
+
+export type BrandColorEntryDto = {
+  hex: string;
+  usage: string;
+};
+
+export type BrandColorsDto = {
+  primary?: string;
+  secondary?: string;
+  background?: string;
+  text?: string;
+  accent?: string;
+  link?: string;
+  palette: Array<BrandColorEntryDto>;
+};
+
+export type BrandFontDto = {
+  family: string;
+  usage: string;
+  source: "custom" | "google" | "system";
+};
+
+export type BrandTypographyDto = {
+  h1?: string;
+  h2?: string;
+  body?: string;
+};
+
+export type BrandButtonStyleDto = {
+  background?: string;
+  textColor?: string;
+  borderColor?: string;
+  borderRadius?: string;
+  shadow?: string;
+};
+
+export type BrandComponentsDto = {
+  buttonPrimary?: BrandButtonStyleDto;
+  buttonSecondary?: BrandButtonStyleDto;
+  input?: BrandButtonStyleDto;
+};
+
+export type BrandSpacingDto = {
+  /**
+   * Heuristic: mode of observed small padding/margin values, not a guaranteed design token
+   */
+  baseUnit?: number;
+  borderRadius?: string;
+};
+
+export type BrandSocialProfileDto = {
+  name: string;
+  url: string;
+};
+
+export type BrandLinksDto = {
+  blog?: string;
+  login?: string;
+  signup?: string;
+  careers?: string;
+  contact?: string;
+  privacy?: string;
+  terms?: string;
+  pricing?: string;
+};
+
+export type BrandLocationDto = {
+  city?: {
+    [key: string]: unknown;
+  };
+  state?: {
+    [key: string]: unknown;
+  };
+  country?: {
+    [key: string]: unknown;
+  };
+  countryCode?: {
+    [key: string]: unknown;
+  };
+};
+
+/**
+ * LLM-synthesized company intelligence. Only present when mode is `enriched`. Coverage depends on public information available for the domain — not every field is populated for every site.
+ */
+export type BrandCompanyDto = {
+  /**
+   * Year the company was founded
+   */
+  foundedYear?: number;
+  /**
+   * Approximate employee headcount range
+   */
+  employeesRange?: string;
+  /**
+   * Approximate annual revenue range
+   */
+  revenueRange?: string;
+  kind?: "PRIVATELY_HELD" | "PUBLICLY_TRADED" | "NON_PROFIT" | "GOVERNMENT";
+  /**
+   * Primary industry or category the company operates in
+   */
+  industry?: string;
+  location?: BrandLocationDto;
+  /**
+   * Stock ticker symbol, present when kind is PUBLICLY_TRADED
+   */
+  stockTicker?: string;
+  summary?: string;
+  targetAudience?: string;
+  targetAudienceSegments?: Array<
+    | "Freelancers"
+    | "Startups"
+    | "SMBs"
+    | "Mid-Market"
+    | "Enterprise"
+    | "Consumers (B2C)"
+  >;
+  brandVoice?: Array<string>;
+  useCases?: Array<string>;
+};
+
+/**
+ * Meta tags scraped from the page head. Which tags are present depends on what the site itself publishes — not every site sets every Open Graph or Twitter Card tag.
+ */
+export type BrandPageMetaDto = {
+  title?: string;
+  themeColor?: string;
+  canonicalUrl?: string;
+  language?: string;
+  "og:url"?: string;
+  "og:type"?: string;
+  "og:title"?: string;
+  "og:description"?: string;
+  "og:image"?: string;
+  "og:image:type"?: string;
+  "og:image:width"?: string;
+  "og:image:height"?: string;
+  "og:site_name"?: string;
+  "og:locale"?: string;
+  "twitter:card"?: string;
+  "twitter:site"?: string;
+};
+
+export type BrandDataDto = {
+  domain: string;
+  name?: string;
+  tagline?: string;
+  description?: string;
+  slogan?: string;
+  isNsfw?: boolean;
+  favicon?: string;
+  bannerUrl?: string;
+  logos?: Array<BrandLogoDto>;
+  colors?: BrandColorsDto;
+  colorScheme?: "light" | "dark";
+  fonts?: Array<BrandFontDto>;
+  fontSizes?: BrandTypographyDto;
+  components?: BrandComponentsDto;
+  spacing?: BrandSpacingDto;
+  socialProfiles?: Array<BrandSocialProfileDto>;
+  links?: BrandLinksDto;
+  company?: BrandCompanyDto;
+  pageMeta?: BrandPageMetaDto;
+};
+
+export type BrandResponseDto = {
+  /**
+   * Timestamp of the request in milliseconds
+   */
+  timestamp: number;
+  /**
+   * API status message
+   */
+  apiStatus: "success" | "failure";
+  /**
+   * API status code
+   */
+  apiCode: number;
+  /**
+   * Metadata about the request
+   */
+  meta: BrandMetaDto;
+  /**
+   * Brand data payload
+   */
+  data: BrandDataDto;
+};
+
 export type HealthResponseDto = {
   /**
    * Timestamp of the request in milliseconds
@@ -2958,3 +3274,28 @@ export type SearchResponses = {
 };
 
 export type SearchResponse = SearchResponses[keyof SearchResponses];
+
+export type BrandData = {
+  body: BrandDto;
+  path?: never;
+  query?: never;
+  url: "/brand";
+};
+
+export type BrandErrors = {
+  /**
+   * Invalid URL.
+   */
+  400: BaseErrorResponseDto;
+};
+
+export type BrandError = BrandErrors[keyof BrandErrors];
+
+export type BrandResponses = {
+  /**
+   * Successfully retrieved brand data
+   */
+  200: BrandResponseDto;
+};
+
+export type BrandResponse = BrandResponses[keyof BrandResponses];

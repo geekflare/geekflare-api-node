@@ -7,6 +7,9 @@ import type {
   TDataShape,
 } from "./client/index.js";
 import type {
+  BrandData,
+  BrandErrors,
+  BrandResponses,
   BrokenLinkData,
   BrokenLinkErrors,
   BrokenLinkResponses,
@@ -429,6 +432,24 @@ export const search = <ThrowOnError extends boolean = false>(
   (options.client ?? client).post<SearchResponses, SearchErrors, ThrowOnError>({
     security: [{ name: "x-api-key", type: "apiKey" }],
     url: "/search",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+/**
+ * Get brand data for a domain
+ *
+ * Retrieve structured brand information for a website domain, including key brand details useful for identifying and understanding a website or company. Coverage varies by site — not every domain publishes every data point (logos, social profiles, company details, etc.), so fields may be omitted or null when unavailable.
+ */
+export const brand = <ThrowOnError extends boolean = false>(
+  options: Options<BrandData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<BrandResponses, BrandErrors, ThrowOnError>({
+    security: [{ name: "x-api-key", type: "apiKey" }],
+    url: "/brand",
     ...options,
     headers: {
       "Content-Type": "application/json",
