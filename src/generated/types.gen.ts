@@ -282,11 +282,11 @@ export type WebScrapeDto = {
    */
   renderJS?: boolean;
   /**
-   * Whether to route the request through a proxy. `false` never uses a proxy (default), `auto` tries without a proxy first and retries through one if the site blocks the request, `true` always uses a proxy.
+   * Controls when a proxy is used. `false` doesn't use a proxy (default), `auto` tries without a proxy first and retries through one if the site blocks the request, `true` always uses a proxy. `proxyMode` is optional — to route through a proxy in a specific country, you can set `proxyCountry` on its own.
    */
   proxyMode?: boolean | "auto";
   /**
-   * Proxy country code to route the request. Used when a proxy is active (proxyMode is auto or true).
+   * Country code (ISO alpha-2) to route the request through a proxy in. Can be used on its own — `proxyMode` is not required. Combine it with `proxyMode` if you want control over when the proxy is used.
    */
   proxyCountry?: string;
   /**
@@ -314,7 +314,7 @@ export type WebScrapeDto = {
    */
   waitTime?: number;
   /**
-   * Extraction mode (only used if format=json). Set to `template` to use a ready-made extraction template instead of a custom schema — see the `template` field.
+   * Extraction mode. JSON output is used automatically when an extraction mode is requested — you don't need to set `format` to `json`. Set to `template` to use a ready-made extraction template instead of a custom schema — see the `template` field.
    */
   extractionMode?: "default" | "cssSchema" | "xpathSchema" | "template";
   /**
@@ -326,7 +326,7 @@ export type WebScrapeDto = {
    */
   extractionSchema?: ExtractionSchemaDto;
   /**
-   * Ask AI to extract or analyze the scraped page. Always runs against the Markdown of the page regardless of the format field. Adds +6 credits on top of the base scraping cost.
+   * Ask AI to extract or analyze the scraped page. Always runs against the Markdown of the page regardless of the format field. Adds +7 credits on top of the base scraping cost.
    */
   aiPrompt?:
     | ({
@@ -391,7 +391,7 @@ export type WebScrapeMetaDto = {
    */
   proxyMode: string;
   /**
-   * Whether a proxy was actually used for this request. Always matches proxyMode when it's `false` or `true`; depends on the outcome of the auto-retry when proxyMode is `auto`.
+   * Whether a proxy was actually used for this request. When proxyMode is `auto`, this depends on whether the site blocked the initial request.
    */
   proxyUsed: boolean;
   /**
@@ -403,7 +403,7 @@ export type WebScrapeMetaDto = {
    */
   proxyCountry?: string;
   /**
-   * Extraction mode (only used if format=json)
+   * Extraction mode used for this request. When an extraction mode is requested, the result is returned as JSON.
    */
   extractionMode: string;
   /**
@@ -2193,6 +2193,10 @@ export type SearchMetaDto = {
    */
   query: string;
   /**
+   * Number of results requested
+   */
+  limit?: number;
+  /**
    * Number of results returned
    */
   count: number;
@@ -2205,9 +2209,29 @@ export type SearchMetaDto = {
    */
   location: string;
   /**
+   * City used for localized results, if one was requested
+   */
+  city?: string;
+  /**
    * Time filter applied
    */
   time: string;
+  /**
+   * Category filter applied
+   */
+  category?: string;
+  /**
+   * Domains results were restricted to, if any
+   */
+  includeDomains?: Array<string>;
+  /**
+   * Domains excluded from results, if any
+   */
+  excludeDomains?: Array<string>;
+  /**
+   * Output format requested
+   */
+  format?: string;
   /**
    * Whether URL scraping was enabled
    */
@@ -2371,6 +2395,194 @@ export type GroundedAnswerResponseDto = {
   data: GroundedAnswerDataDto;
 };
 
+/**
+ * Full Google SERP. Which sections are present depends on what Google returns for the query. With `source` set to `news` or `images`, results are returned under `news` or `images` instead of `organic`.
+ */
+export type SearchSerpDataDto = {
+  /**
+   * Details about the search that was run
+   */
+  general?: {
+    search_engine?: string;
+    /**
+     * Query as searched
+     */
+    query?: string;
+    detected_query?: string;
+    /**
+     * Approximate total results reported by Google
+     */
+    results_cnt?: number;
+    /**
+     * Search time in seconds
+     */
+    search_time?: number;
+    language?: string;
+    country_code?: string;
+    /**
+     * Location the search was targeted to
+     */
+    location?: string;
+    gl?: string;
+    mobile?: boolean;
+    basic_view?: boolean;
+    search_type?: string;
+    page_title?: string;
+    timestamp?: string;
+  };
+  input?: {
+    /**
+     * Google search URL used
+     */
+    original_url?: string;
+    request_id?: string;
+  };
+  /**
+   * Search vertical tabs shown on the page (Images, News, Videos, Maps, etc.)
+   */
+  navigation?: Array<{
+    title?: string;
+    href?: string;
+  }>;
+  /**
+   * Organic (non-ad) results
+   */
+  organic?: Array<{
+    link?: string;
+    source?: string;
+    display_link?: string;
+    title?: string;
+    description?: string;
+    /**
+     * Portions of the snippet Google highlights
+     */
+    snippet_highlighted_words?: Array<string>;
+    /**
+     * Extra info shown with the result, such as a date
+     */
+    extensions?: Array<{
+      inline?: boolean;
+      type?: string;
+      text?: string;
+      rank?: number;
+    }>;
+    /**
+     * Site icon as a data URI
+     */
+    icon?: string;
+    /**
+     * Position within this section
+     */
+    rank?: number;
+    /**
+     * Position across the whole results page
+     */
+    global_rank?: number;
+  }>;
+  /**
+   * News results. Returned instead of `organic` when `source` is `news`.
+   */
+  news?: Array<{
+    [key: string]: unknown;
+  }>;
+  /**
+   * Image results. Returned instead of `organic` when `source` is `images`.
+   */
+  images?: Array<{
+    [key: string]: unknown;
+  }>;
+  pagination?: {
+    pages?: Array<{
+      page?: number;
+      start?: number;
+      link?: string;
+    }>;
+    current_page?: number;
+    next_page?: number;
+    next_page_start?: number;
+    next_page_link?: string;
+  };
+  /**
+   * Related searches
+   */
+  related?: Array<{
+    text?: string;
+    link?: string;
+    /**
+     * Position within this section
+     */
+    rank?: number;
+    /**
+     * Position across the whole results page
+     */
+    global_rank?: number;
+  }>;
+  /**
+   * AI Overview that Google shows for the query. Only present when Google returns one.
+   */
+  ai_overview?: {
+    /**
+     * AI Overview as plain text
+     */
+    text?: string;
+    /**
+     * AI Overview as the raw HTML Google rendered
+     */
+    html?: string;
+    /**
+     * Sources cited by the AI Overview
+     */
+    references?: Array<{
+      title?: string;
+      /**
+       * Source URL. Can be null when Google doesn't expose one
+       */
+      url?: string;
+      source?: string;
+      snippet?: string;
+    }>;
+  };
+  /**
+   * People Also Ask questions
+   */
+  people_also_ask?: Array<{
+    question?: string;
+    question_link?: string;
+    question_type?: string;
+    /**
+     * Position within this section
+     */
+    rank?: number;
+    /**
+     * Position across the whole results page
+     */
+    global_rank?: number;
+  }>;
+};
+
+export type SearchSerpResponseDto = {
+  /**
+   * Timestamp of the request in milliseconds
+   */
+  timestamp: number;
+  /**
+   * API status message
+   */
+  apiStatus: "success" | "failure";
+  /**
+   * API status code
+   */
+  apiCode: number;
+  /**
+   * Metadata about the search
+   */
+  meta: SearchMetaDto;
+  /**
+   * Google SERP data (returned when `serp` is `true`)
+   */
+  data: SearchSerpDataDto;
+};
+
 export type SearchRequestDto = {
   /**
    * Search query
@@ -2385,15 +2597,19 @@ export type SearchRequestDto = {
    */
   time?: string;
   /**
-   * Country code (ISO alpha-2)
+   * Country code (ISO alpha-2). Can be combined with `city` for city-level targeting; when `city` is set, it takes priority.
    */
   location?: string;
   /**
-   * Search source
+   * Device to emulate when searching. Defaults to desktop.
+   */
+  device?: "desktop" | "mobile";
+  /**
+   * Search source. SERP mode accepts one source per request.
    */
   source?: "web" | "news" | "images";
   /**
-   * Category filter
+   * Category filter. Ignored in SERP mode.
    */
   category?: "general" | "code" | "pdf" | "research" | "linkedin" | "wiki";
   /**
@@ -2405,21 +2621,29 @@ export type SearchRequestDto = {
    */
   excludeDomains?: Array<string>;
   /**
-   * Output format
+   * Output format. Ignored in SERP mode.
    */
   format?: "json" | "markdown" | "html";
   /**
-   * scrape and extract content from SERP result URLs
+   * scrape and extract content from SERP result URLs. Ignored in SERP mode.
    */
   scrape?: boolean;
   /**
-   * Number of URLs to scrape (requires scrape: true)
+   * Number of URLs to scrape (requires scrape: true). Ignored in SERP mode.
    */
   scrapeLimit?: number;
   /**
-   * Use AI to synthesize a grounded answer from search results.
+   * Use AI to synthesize a grounded answer from search results. Ignored in SERP mode.
    */
   groundedAnswer?: boolean;
+  /**
+   * Return the full Google search results page (SERP) including organic results, AI Overviews, related searches, People Also Ask, pagination, and more. Supported in this mode: `query`, `location`, `city`, `device`, `limit`, `source` (one value), `time`, `includeDomains`, and `excludeDomains`. It returns the first page of results.
+   */
+  serp?: boolean;
+  /**
+   * City to target for localized results, using the name exactly as listed in the supported cities file, e.g. `London,England,United Kingdom`. Works with standard search and with `serp: true`. When set, it takes priority over `location`. Supported cities: https://cdn.geekflare.com/api-assets/geotargets-2026-08-12.json
+   */
+  city?: string;
 };
 
 export type BrandDto = {
@@ -3270,7 +3494,8 @@ export type SearchResponses = {
     | ImageSearchResponseDto
     | SearchMarkdownResponseDto
     | SearchHtmlResponseDto
-    | GroundedAnswerResponseDto;
+    | GroundedAnswerResponseDto
+    | SearchSerpResponseDto;
 };
 
 export type SearchResponse = SearchResponses[keyof SearchResponses];

@@ -181,6 +181,8 @@ export type {
   SearchResponseDto,
   SearchResponses,
   SearchResultItemDto,
+  SearchSerpDataDto,
+  SearchSerpResponseDto,
   SelectorExtractionFieldDto,
   SentimentAiPromptDto,
   ServiceHealthResponseDto,
